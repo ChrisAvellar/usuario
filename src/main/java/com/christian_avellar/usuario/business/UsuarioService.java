@@ -5,11 +5,10 @@ import com.christian_avellar.usuario.business.converter.UsuarioConverter;
 import com.christian_avellar.usuario.business.dto.UsuarioDTO;
 import com.christian_avellar.usuario.infrastructure.entity.Usuario;
 import com.christian_avellar.usuario.infrastructure.exceptions.ConflictException;
-import com.christian_avellar.usuario.infrastructure.exceptions.ResourceNotFoundExeption;
+import com.christian_avellar.usuario.infrastructure.exceptions.ResourceNotFoundException;
 import com.christian_avellar.usuario.infrastructure.repository.UsuarioRepository;
-import lombok.AllArgsConstructor;
+import com.christian_avellar.usuario.infrastructure.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +19,7 @@ public class UsuarioService {
     private final UsuarioRepository usuarioRepository;
     private final UsuarioConverter usuarioConverter;
     private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
 
 
     public UsuarioDTO salvarUsuario(UsuarioDTO usuarioDTO) {
@@ -45,14 +45,26 @@ public class UsuarioService {
         return usuarioRepository.existsByEmail(email);
     }
 
-    public Usuario buscaUsuarioPorEmail(String email) {
-        return usuarioRepository.findByEmail(email).orElseThrow(() ->
-                new ResourceNotFoundExeption("Email não encontrado" + email));
+    public UsuarioDTO buscaUsuarioPorEmail(String email) {
+        try {
+            return usuarioConverter.paraUsuarioDTO(
+                    usuarioRepository.findByEmail(email)
+                            .orElseThrow(
+                                    () -> new ResourceNotFoundException("Email não encontrado " + email)
+                            )
+            );
+        } catch (ResourceNotFoundException e) {
+            throw new ResourceNotFoundException("Email não encontrado " + email);
+        }
     }
 
     public void deletaUsuarioPorEmail(String email) {
         usuarioRepository.deleteByEmail(email);
     }
+
+
+
+
 
 }
 
